@@ -25,12 +25,12 @@ pub async fn run(state: SharedState) -> anyhow::Result<()> {
     while let Some(msg) = read.next().await {
         if let Ok(msg) = msg {
             if let Ok(text) = msg.into_text() {
-                process_message(&state, &text);
+                process_message(&state, &text).await;
             }
         }
         if tick % 200 == 0 {
             let new_markets = get_new_markets().await;
-            let mut app_state = state.lock().unwrap();
+            let mut app_state = state.lock().await;
             app_state.set_new_markets(new_markets);
         }
         tick += 1;
@@ -41,8 +41,8 @@ pub async fn run(state: SharedState) -> anyhow::Result<()> {
 }
 
 
-fn process_message(state: &SharedState, msg: &str) {
-    let mut state = state.lock().unwrap();
+async fn process_message(state: &SharedState, msg: &str) {
+    let mut state = state.lock().await;
     if let Ok(full_payload) = serde_json::from_str::<FullPayload>(msg) {
 
         let payload = full_payload.payload;

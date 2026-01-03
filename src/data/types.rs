@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Payload {
     pub condition_id: String,
@@ -14,12 +14,12 @@ pub struct Payload {
     
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 pub struct FullPayload {
     pub payload: Payload,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MarketData {
     pub id: String,
@@ -31,12 +31,8 @@ pub struct MarketData {
     pub image: Option<String>,
     pub icon: Option<String>,
     
-    pub liquidity: Option<String>,  // It's a string in the API, not f64
+    pub liquidity: Option<String>,
     #[serde(default)]
-    pub volume: String,  // Might not be present or might be a string
+    pub volume: String,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct MarketsResponse {
-    pub markets: Vec<MarketData>,
-}
