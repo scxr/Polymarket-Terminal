@@ -11,7 +11,7 @@ use crate::data::state::SharedState;
 use super::app::App;
 use super::pages::{Page, PageAction, PageType};
 
-pub fn run(state: SharedState) -> io::Result<()> {
+pub async fn run(state: SharedState) -> io::Result<()> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen)?;
@@ -21,6 +21,15 @@ pub fn run(state: SharedState) -> io::Result<()> {
     let mut app = App::new();
 
     loop {
+        // Check if detail page needs refresh
+        if let PageType::Detail = app.current_page {
+            if let Some(ref mut detail) = app.detail_page {
+                if detail.should_refresh() {
+                    detail.fetch_market_data().await;
+                }
+            }
+        }
+
         terminal.draw(|frame| {
             let area = frame.area();
             match app.current_page {
@@ -52,8 +61,8 @@ pub fn run(state: SharedState) -> io::Result<()> {
                     PageAction::None => {}
                     PageAction::Quit => break,
                     PageAction::GoBack => app.go_back(),
-                    PageAction::NavigateToDetail { title, content } => {
-                        app.navigate_to_detail(title, content);
+                    PageAction::NavigateToDetail { title, content, identifier } => {
+                        app.navigate_to_detail(title, content, identifier);
                     }
                 }
             }

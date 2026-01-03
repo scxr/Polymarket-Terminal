@@ -17,7 +17,7 @@ pub enum PageType {
 
 pub enum PageAction {
     None,
-    NavigateToDetail { title: String, content: String },
+    NavigateToDetail { title: String, content: String, identifier: String },
     GoBack,
     Quit,
 }

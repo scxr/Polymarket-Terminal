@@ -10,6 +10,7 @@ pub struct Payload {
     pub side: String,
     pub outcome: String,
     pub proxy_wallet: String,
+    pub slug: String,
 
     
 }
@@ -35,4 +36,26 @@ pub struct MarketData {
     #[serde(default)]
     pub volume: String,
 }
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct MarketSpecificDetails {
+    pub id: String,
+    pub resolution_source: String,
+    pub end_date: String,
+    pub liquidity: String,
+    pub start_date: String,
+    pub description: String,
+    pub outcomes: String,
+    pub volume: String,
+    pub active: bool,
+    pub closed: bool,
+    pub volume24hr: f64,
+    pub volume1wk: f64,
+    pub volume1mo: f64,
+    pub volume1yr: f64,
+    pub clob_token_ids: String,
+    pub spread: f32,
+    pub best_bid: f64,
+    pub best_ask: f64,
 
+}

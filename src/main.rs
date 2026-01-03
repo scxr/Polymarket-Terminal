@@ -19,7 +19,7 @@ async fn main() -> anyhow::Result<()> {
     });
 
     let ui_state = state.clone();
-    tokio::task::spawn_blocking(move || ui::run(ui_state)).await??;
+    ui::run(ui_state).await?;
 
     Ok(())
 }

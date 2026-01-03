@@ -46,7 +46,7 @@ async fn process_message(state: &SharedState, msg: &str) {
     if let Ok(full_payload) = serde_json::from_str::<FullPayload>(msg) {
 
         let payload = full_payload.payload;
-        state.add_trade(payload.title, payload.size, payload.condition_id);
+        state.add_trade(payload.title, payload.size, payload.condition_id, payload.slug);
     }
 
 }

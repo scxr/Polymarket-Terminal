@@ -123,7 +123,7 @@ impl DashboardPage {
         }
     }
 
-    fn get_selected_item_info(&self, frame_data: &FrameData) -> Option<(String, String)> {
+    fn get_selected_item_info(&self, frame_data: &FrameData) -> Option<(String, String, String)> {
         match self.selected {
             SelectedBox::TopMarkets => {
                 frame_data.top_markets.get(self.top_markets_index).map(|m| {
@@ -134,6 +134,7 @@ impl DashboardPage {
                             m.name,
                             format_volume(m.volume)
                         ),
+                        m.identifier.clone()
                     )
                 })
             }
@@ -146,6 +147,8 @@ impl DashboardPage {
                             addr,
                             format_volume(*vol)
                         ),
+                        String::from(addr)
+
                     )
                 })
             }
@@ -157,6 +160,8 @@ impl DashboardPage {
                             "Name: {}\nVolume: {}\n\n[More details will go here]",
                             name, vol
                         ),
+                        String::from("temp")
+
                     )
                 })
             }
@@ -370,8 +375,8 @@ impl Page for DashboardPage {
                 PageAction::None
             }
             KeyCode::Enter => {
-                if let Some((title, content)) = self.get_selected_item_info(&frame_data) {
-                    PageAction::NavigateToDetail { title, content }
+                if let Some((title, content, id)) = self.get_selected_item_info(&frame_data) {
+                    PageAction::NavigateToDetail { title, content, identifier: id }
                 } else {
                     PageAction::None
                 }

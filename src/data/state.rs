@@ -8,7 +8,8 @@ pub type SharedState = Arc<Mutex<AppState>>;
 #[derive(Clone)]
 pub struct MarketData {
     pub name: String,
-    pub volume: f64
+    pub volume: f64,
+    pub identifier: String,
 }
 pub struct AppState {
     pub traders: Vec<(String, f64)>,
@@ -39,11 +40,11 @@ impl AppState {
         }
     }
 
-    pub fn add_trade(&mut self, title: String, trade_size: f64, trader_address: String ) {
+    pub fn add_trade(&mut self, title: String, trade_size: f64, trader_address: String, id: String ) {
         self.tick += 1;
         self.tracked_markets += 1;
         self.tracked_traders.entry(trader_address).and_modify(|v| *v += trade_size).or_insert(trade_size);
-        self.top_markets.entry(title.clone()).and_modify(|v| v.volume += trade_size).or_insert(MarketData {name: title,volume: trade_size});
+        self.top_markets.entry(title.clone()).and_modify(|v| v.volume += trade_size).or_insert(MarketData {name: title,volume: trade_size, identifier: id });
     }
 
     pub fn get_top_markets(&mut self) -> (Vec<MarketData>, f64) {

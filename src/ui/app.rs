@@ -22,8 +22,8 @@ impl App {
         self.current_page = page;
     }
 
-    pub fn navigate_to_detail(&mut self, title: String, content: String) {
-        self.detail_page = Some(DetailPage::new(title, content));
+    pub fn navigate_to_detail(&mut self, title: String, content: String, identifier: String) {
+        self.detail_page = Some(DetailPage::new(title, content, identifier));
         self.current_page = PageType::Detail;
     }
 
