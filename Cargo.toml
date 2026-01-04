@@ -20,3 +20,5 @@ dotenv = "0.15.0"
 alloy = { version = "1.2.1", features = ["full"] }
 futures = "0.3.31"
 eyre = "0.6.12"
+polymarket-client-sdk = "0.3.1"
+rust_decimal = "1.39.0"

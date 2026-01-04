@@ -1,7 +1,8 @@
+use std::env;
 use std::time::{Duration, Instant};
 use crossterm::event::{KeyCode, KeyEvent};
 use crossterm::style::Stylize;
-
+use dotenv::dotenv;
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
@@ -24,10 +25,14 @@ pub struct DetailPage {
     pub last_fetch: Option<Instant>,
     pub is_loading: bool,
     pub error: Option<String>,
+    pub buy_yes: bool,
+    private_key: String,
 }
 
 impl DetailPage {
     pub fn new(title: String, content: String, identifier: String) -> Self {
+        dotenv().ok();
+        let private_key = env::var("PRIVATE_KEY").unwrap_or_else(|_| "".to_string());
         Self {
             title,
             content,
@@ -37,6 +42,8 @@ impl DetailPage {
             last_fetch: None,
             is_loading: false,
             error: None,
+            private_key,
+            buy_yes: false,
         }
     }
 
@@ -62,6 +69,14 @@ impl DetailPage {
         }
 
         self.is_loading = false;
+    }
+
+    pub fn should_buy_yes(&mut self) -> bool {
+        self.buy_yes
+    }
+
+    pub async fn buy_yes(&self) {
+        let resp = buy_yes(&self.private_key,self.market_data.as_ref().clone().unwrap().clob_token_ids.clone(), "Yes").await;
     }
 
 
@@ -155,7 +170,7 @@ impl Page for DetailPage {
                 self.scroll_offset = self.scroll_offset.saturating_add(1);
                 PageAction::None
             }
-            KeyCode::Char('y') => {buy_yes(self.market_data.as_ref().clone().unwrap().clob_token_ids.clone(), "Yes"); PageAction::None}
+            KeyCode::Char('y') => {;PageAction::None}
             _ => PageAction::None,
         }
     }
