@@ -12,6 +12,7 @@ use ratatui::{
 use crate::data::get_market::get_market_from_slug;
 use crate::data::state::SharedState;
 use crate::data::types::MarketSpecificDetails;
+use crate::actions::buy::buy_yes;
 use super::{Page, PageAction};
 
 pub struct DetailPage {
@@ -62,6 +63,8 @@ impl DetailPage {
 
         self.is_loading = false;
     }
+
+
 }
 
 impl Page for DetailPage {
@@ -152,7 +155,10 @@ impl Page for DetailPage {
                 self.scroll_offset = self.scroll_offset.saturating_add(1);
                 PageAction::None
             }
+            KeyCode::Char('y') => {buy_yes(self.market_data.as_ref().clone().unwrap().clob_token_ids.clone(), "Yes"); PageAction::None}
             _ => PageAction::None,
         }
     }
+
+
 }

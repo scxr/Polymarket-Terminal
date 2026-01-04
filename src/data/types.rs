@@ -40,7 +40,7 @@ pub struct MarketData {
 #[serde(rename_all = "camelCase")]
 pub struct MarketSpecificDetails {
     pub id: String,
-    pub resolution_source: String,
+    pub resolution_source: Option<String>,
     pub end_date: String,
     pub liquidity: String,
     pub start_date: String,

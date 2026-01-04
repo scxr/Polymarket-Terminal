@@ -21,11 +21,21 @@ pub async fn run(state: SharedState) -> io::Result<()> {
     let mut app = App::new();
 
     loop {
-        // Check if detail page needs refresh
         if let PageType::Detail = app.current_page {
             if let Some(ref mut detail) = app.detail_page {
                 if detail.should_refresh() {
                     detail.fetch_market_data().await;
+                }
+            }
+        }
+
+        if let PageType::Wallet = app.current_page {
+            if let Some(ref mut wallet) = app.wallet_page {
+                if wallet.needs_wallet_update() {
+                    wallet.fetch_wallet_info().await;
+                }
+                if wallet.needs_approval() {
+                    wallet.run_approval().await;
                 }
             }
         }
@@ -39,6 +49,11 @@ pub async fn run(state: SharedState) -> io::Result<()> {
                 PageType::Detail => {
                     if let Some(ref mut detail) = app.detail_page {
                         detail.render(frame, area, &state);
+                    }
+                }
+                PageType::Wallet => {
+                    if let Some(ref mut wallet) = app.wallet_page {
+                        wallet.render(frame, area, &state);
                     }
                 }
             }
@@ -55,6 +70,16 @@ pub async fn run(state: SharedState) -> io::Result<()> {
                             PageAction::None
                         }
                     }
+                    PageType::Wallet => {
+                        if let Some(ref mut wallet) = app.wallet_page {
+                        wallet.handle_input(key, &state)
+                        } else {
+                            PageAction::None
+                        }
+
+
+
+                    }
                 };
 
                 match action {
@@ -63,6 +88,9 @@ pub async fn run(state: SharedState) -> io::Result<()> {
                     PageAction::GoBack => app.go_back(),
                     PageAction::NavigateToDetail { title, content, identifier } => {
                         app.navigate_to_detail(title, content, identifier);
+                    }
+                    PageAction::NavigateToWallet {title } => {
+                        app.navigate_to_wallet(title);
                     }
                 }
             }

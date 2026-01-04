@@ -390,9 +390,13 @@ impl Page for DashboardPage {
                 };
                 PageAction::None
             }
+            KeyCode::Char('w') => {
+                PageAction::NavigateToWallet {title: String::from("hey")}
+            }
             _ => PageAction::None,
         }
     }
+
 }
 
 fn format_volume(volume: f64) -> String {

@@ -1,6 +1,7 @@
 #[allow(unused)]
 mod data;
 mod ui;
+mod actions;
 
 use std::sync::Arc;
 use tokio::sync::Mutex;
