@@ -18,7 +18,8 @@ use super::{Page, PageAction};
 pub struct WalletPage {
     pub title: String,
     pub needs_wallet_update: bool,
-    pub pending_approval: bool
+    pub pending_approval: bool,
+    pub approval_text: String,
 }
 
 impl WalletPage {
@@ -26,7 +27,8 @@ impl WalletPage {
         Self {
             title: title,
             needs_wallet_update: true,
-            pending_approval: false
+            pending_approval: false,
+            approval_text: "Approval Process: Not running".to_string(),
 
         }
     }
@@ -41,7 +43,7 @@ impl WalletPage {
         let wallet_details =get_wallet_full(private_key.as_str()).await;
         match wallet_details {
             Ok(wallet_details) => {
-                self.title = format!("Wallet  info fetched\nAddress: {}\nUSDCE Balance: {}\nPOL Balance: {}\n\nUser is approved? {} ", wallet_details.0, wallet_details.1, wallet_details.2, wallet_details.3).to_string();
+                self.title = format!("Wallet  info fetched\nAddress: {}\nUSDCE Balance: {}\nPOL Balance: {}\n\nUser is approved? {}\n\n{} ", wallet_details.0, wallet_details.1, wallet_details.2, wallet_details.3, self.approval_text).to_string();
             }
             Err(e) => {
                 self.title = String::from("Error parsing private key");
@@ -64,6 +66,7 @@ impl WalletPage {
         match approval_process(&private_key).await {
             Ok(result) => {
                 if result.success {
+                    self.approval_text = "Successfully approved".to_string();
                     let approvals_str: Vec<String> = result.approvals
                         .iter()
                         .enumerate()
@@ -73,7 +76,7 @@ impl WalletPage {
                         .collect();
 
                     if approvals_str.is_empty() {
-                        self.title = "Approval process complete!\nAll spenders were already approved.".to_string();
+                        self.approval_text = "Approval process complete!\nAll spenders were already approved.".to_string();
                     } else {
                         self.title = format!(
                             "Approval process complete!\n\nNew approvals:\n{}",
@@ -81,7 +84,7 @@ impl WalletPage {
                         );
                     }
                 } else {
-                    self.title = format!(
+                    self.approval_text = format!(
                         "Approval failed: {}",
                         result.error.unwrap_or_else(|| "Unknown error".to_string())
                     );
