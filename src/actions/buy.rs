@@ -56,6 +56,6 @@ pub async fn buy_yes(private_key: &str, clob_ids: String, option: &str) -> Resul
 
     let signed_order = client.sign(&signer, market_order).await?;
     let _posted_order = client.post_order(signed_order).await?;
-    
+
     Ok(_posted_order)
 }

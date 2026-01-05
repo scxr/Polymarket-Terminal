@@ -80,16 +80,17 @@ impl DetailPage {
     pub async fn buy_yes(&mut self) {
         self.buy_resp = "Processing...".to_string();
         let resp = buy_yes(&self.private_key,self.market_data.as_ref().clone().unwrap().clob_token_ids.clone(), "Yes").await;
-        let mut error_msg = String::new();
+
         match resp {
             Ok(response) => {
-                error_msg = response.error_msg.unwrap_or("".to_string());
+
+                self.buy_resp = format!("Buy error: {}\nSuccess: {}\nStatus: {}\nMaking Amount: {}\nTaking amount: {}", response.error_msg.unwrap(), response.status, response.status, response.making_amount, response.taking_amount);
             }
             Err(e) => {
-
+                self.buy_resp = format!("Buy error : {}", e)
             }
         }
-        self.buy_resp = format!("Buy error: {}", error_msg).to_string();
+
         self.buy_yes = false;
     }
 
@@ -133,10 +134,10 @@ impl Page for DetailPage {
                     data.active,
                     data.liquidity,
                     data.volume,
-                    data.volume24hr,
-                    data.volume1wk,
-                    data.volume1mo,
-                    data.volume1yr,
+                    data.volume24hr.unwrap_or(0.0),
+                    data.volume1wk.unwrap_or(0.0),
+                    data.volume1mo.unwrap_or(0.0),
+                    data.volume1yr.unwrap_or(0.0),
                     data.best_ask,
                     data.best_bid,
                     self.buy_resp
