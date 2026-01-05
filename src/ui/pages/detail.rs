@@ -27,6 +27,7 @@ pub struct DetailPage {
     pub error: Option<String>,
     pub buy_yes: bool,
     private_key: String,
+    pub buy_resp: String,
 }
 
 impl DetailPage {
@@ -44,6 +45,7 @@ impl DetailPage {
             error: None,
             private_key,
             buy_yes: false,
+            buy_resp: "".to_string(),
         }
     }
 
@@ -75,8 +77,20 @@ impl DetailPage {
         self.buy_yes
     }
 
-    pub async fn buy_yes(&self) {
+    pub async fn buy_yes(&mut self) {
+        self.buy_resp = "Processing...".to_string();
         let resp = buy_yes(&self.private_key,self.market_data.as_ref().clone().unwrap().clob_token_ids.clone(), "Yes").await;
+        let mut error_msg = String::new();
+        match resp {
+            Ok(response) => {
+                error_msg = response.error_msg.unwrap_or("".to_string());
+            }
+            Err(e) => {
+
+            }
+        }
+        self.buy_resp = format!("Buy error: {}", error_msg).to_string();
+        self.buy_yes = false;
     }
 
 
@@ -113,7 +127,7 @@ impl Page for DetailPage {
         } else if let Some(ref data) = self.market_data {
 
             format!(
-                "{}\n\nMarket Data\n\nDescription: {}\nActive: {}\nLiquidity: {}\nVolume: {}\n24hr|1wk|1mo|1yr vol : {}|{}|{}|{}\nBid/Ask: {}/{}",
+                "{}\n\nMarket Data\n\nDescription: {}\nActive: {}\nLiquidity: {}\nVolume: {}\n24hr|1wk|1mo|1yr vol : {}|{}|{}|{}\nBid/Ask: {}/{}\n\n\n{}",
                     self.content,
                     data.description,
                     data.active,
@@ -124,7 +138,8 @@ impl Page for DetailPage {
                     data.volume1mo,
                     data.volume1yr,
                     data.best_ask,
-                    data.best_bid
+                    data.best_bid,
+                    self.buy_resp
             )
         } else {
             format!("{}\n\nSlug: {}", self.content, self.id)
@@ -170,7 +185,7 @@ impl Page for DetailPage {
                 self.scroll_offset = self.scroll_offset.saturating_add(1);
                 PageAction::None
             }
-            KeyCode::Char('y') => {;PageAction::None}
+            KeyCode::Char('y') => {self.buy_yes = true;PageAction::None}
             _ => PageAction::None,
         }
     }

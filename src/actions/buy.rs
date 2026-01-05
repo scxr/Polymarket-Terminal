@@ -8,6 +8,7 @@ use polymarket_client_sdk::clob::{Client, Config};
 use polymarket_client_sdk::{
     clob::types::{Amount, Side},
 };
+use polymarket_client_sdk::clob::types::response::PostOrderResponse;
 use rust_decimal::Decimal;
 
 const CLOB_URL: &str = "https://clob.polymarket.com";
@@ -19,7 +20,7 @@ fn parse_string_list(s: &str) -> Vec<String> {
         .collect()
 }
 
-pub async fn buy_yes(private_key: &str, clob_ids: String, option: &str) -> Result<()> {
+pub async fn buy_yes(private_key: &str, clob_ids: String, option: &str) -> Result<PostOrderResponse> {
     let clob_ids_parsed = parse_string_list(&clob_ids);
 
 
@@ -56,5 +57,5 @@ pub async fn buy_yes(private_key: &str, clob_ids: String, option: &str) -> Resul
     let signed_order = client.sign(&signer, market_order).await?;
     let _posted_order = client.post_order(signed_order).await?;
     
-    Ok(())
+    Ok(_posted_order)
 }
