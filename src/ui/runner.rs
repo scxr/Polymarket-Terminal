@@ -27,11 +27,12 @@ pub async fn run(state: SharedState) -> io::Result<()> {
                     detail.fetch_market_data().await;
                 }
                 if detail.should_buy_yes() {
-                    detail.buy_yes().await;
+                    detail.buy(true).await;
+                }
+                if detail.should_buy_no() {
+                    detail.buy(false).await;
                 }
             }
-
-
         }
 
         if let PageType::Wallet = app.current_page {

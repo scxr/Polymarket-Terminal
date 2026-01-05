@@ -26,6 +26,7 @@ pub struct DetailPage {
     pub is_loading: bool,
     pub error: Option<String>,
     pub buy_yes: bool,
+    pub buy_no: bool,
     private_key: String,
     pub buy_resp: String,
 }
@@ -45,6 +46,7 @@ impl DetailPage {
             error: None,
             private_key,
             buy_yes: false,
+            buy_no: false,
             buy_resp: "".to_string(),
         }
     }
@@ -77,9 +79,18 @@ impl DetailPage {
         self.buy_yes
     }
 
-    pub async fn buy_yes(&mut self) {
+    pub fn should_buy_no(&mut self) -> bool {
+        self.buy_no
+    }
+
+    pub async fn buy(&mut self, yes: bool) {
+        let side = if yes == true {
+            "Yes"
+        } else {
+            "No"
+        };
         self.buy_resp = "Processing...".to_string();
-        let resp = buy_yes(&self.private_key,self.market_data.as_ref().clone().unwrap().clob_token_ids.clone(), "Yes").await;
+        let resp = buy_yes(&self.private_key,self.market_data.as_ref().clone().unwrap().clob_token_ids.clone(), side).await;
 
         match resp {
             Ok(response) => {
@@ -92,7 +103,9 @@ impl DetailPage {
         }
 
         self.buy_yes = false;
+        self.buy_no = false;
     }
+
 
 
 }
@@ -187,6 +200,7 @@ impl Page for DetailPage {
                 PageAction::None
             }
             KeyCode::Char('y') => {self.buy_yes = true;PageAction::None}
+            KeyCode::Char('n') => {self.buy_no = true;PageAction::None}
             _ => PageAction::None,
         }
     }
