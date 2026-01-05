@@ -26,11 +26,18 @@ pub async fn run(state: SharedState) -> io::Result<()> {
                 if detail.should_refresh() {
                     detail.fetch_market_data().await;
                 }
+
                 if detail.should_buy_yes() {
-                    detail.buy(true).await;
+                    if let Some(amount) = detail.get_buy_amount() {
+                        detail.buy(true, amount).await;
+                    }
+                    detail.buy_yes = false;
                 }
                 if detail.should_buy_no() {
-                    detail.buy(false).await;
+                    if let Some(amount) = detail.get_buy_amount() {
+                        detail.buy(false, amount).await;
+                    }
+                    detail.buy_no = false;
                 }
             }
         }

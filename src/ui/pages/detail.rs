@@ -8,13 +8,20 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Paragraph, Wrap},
+    widgets::{Block, Borders, Paragraph, Wrap, Clear},
 };
 use crate::data::get_market::get_market_from_slug;
 use crate::data::state::SharedState;
 use crate::data::types::MarketSpecificDetails;
 use crate::actions::buy::buy_yes;
 use super::{Page, PageAction};
+
+#[derive(PartialEq, Clone)]
+pub enum InputMode {
+    Normal,
+    BuyYes,
+    BuyNo,
+}
 
 pub struct DetailPage {
     pub title: String,
@@ -29,6 +36,8 @@ pub struct DetailPage {
     pub buy_no: bool,
     private_key: String,
     pub buy_resp: String,
+    pub input_mode: InputMode,
+    pub input_buffer: String,
 }
 
 impl DetailPage {
@@ -48,6 +57,8 @@ impl DetailPage {
             buy_yes: false,
             buy_no: false,
             buy_resp: "".to_string(),
+            input_mode: InputMode::Normal,
+            input_buffer: String::new(),
         }
     }
 
@@ -83,22 +94,35 @@ impl DetailPage {
         self.buy_no
     }
 
-    pub async fn buy(&mut self, yes: bool) {
-        let side = if yes == true {
-            "Yes"
-        } else {
-            "No"
-        };
+    pub fn get_buy_amount(&self) -> Option<f64> {
+        self.input_buffer.parse().ok()
+    }
+
+    pub async fn buy(&mut self, yes: bool, amount: f64) {
+        let side = if yes { "Yes" } else { "No" };
         self.buy_resp = "Processing...".to_string();
-        let resp = buy_yes(&self.private_key,self.market_data.as_ref().clone().unwrap().clob_token_ids.clone(), side).await;
+
+        let resp = buy_yes(
+            &self.private_key,
+            self.market_data.as_ref().unwrap().clob_token_ids.clone(),
+            side,
+            amount.to_string()
+        ).await;
 
         match resp {
             Ok(response) => {
-
-                self.buy_resp = format!("Buy error: {}\nSuccess: {}\nStatus: {}\nMaking Amount: {}\nTaking amount: {}", response.error_msg.unwrap(), response.status, response.status, response.making_amount, response.taking_amount);
+                let error_msg = response.error_msg.unwrap_or_default();
+                if !error_msg.is_empty() {
+                    self.buy_resp = format!("There was an error buying: {}", error_msg);
+                } else {
+                    self.buy_resp = format!(
+                        "Order Status: {}\nYou spent: ${} and received {} {} shares",
+                        response.status, response.making_amount, response.taking_amount, side
+                    );
+                }
             }
             Err(e) => {
-                self.buy_resp = format!("Buy error : {}", e)
+                self.buy_resp = format!("Buy error: {}", e);
             }
         }
 
@@ -106,8 +130,51 @@ impl DetailPage {
         self.buy_no = false;
     }
 
+    fn render_input_popup(&self, frame: &mut Frame, area: Rect) {
+        let popup_width = 40;
+        let popup_height = 5;
 
+        let popup_area = Rect {
+            x: area.x + (area.width.saturating_sub(popup_width)) / 2,
+            y: area.y + (area.height.saturating_sub(popup_height)) / 2,
+            width: popup_width.min(area.width),
+            height: popup_height.min(area.height),
+        };
 
+        frame.render_widget(Clear, popup_area);
+
+        let side = match self.input_mode {
+            InputMode::BuyYes => "YES",
+            InputMode::BuyNo => "NO",
+            InputMode::Normal => "",
+        };
+
+        let block = Block::default()
+            .title(format!(" Buy {} - Enter Amount ", side))
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Green));
+
+        let input_text = Line::from(vec![
+            Span::raw("$ "),
+            Span::styled(&self.input_buffer, Style::default().fg(Color::White)),
+            Span::styled("│", Style::default().fg(Color::Gray)), // cursor
+        ]);
+
+        let help_line = Line::from(vec![
+            Span::styled("Enter", Style::default().fg(Color::Yellow)),
+            Span::raw(" Confirm  "),
+            Span::styled("Esc", Style::default().fg(Color::Yellow)),
+            Span::raw(" Cancel"),
+        ]);
+
+        let content = vec![input_text, Line::raw(""), help_line];
+
+        let paragraph = Paragraph::new(content)
+            .block(block)
+            .style(Style::default().bg(Color::Black));
+
+        frame.render_widget(paragraph, popup_area);
+    }
 }
 
 impl Page for DetailPage {
@@ -139,21 +206,20 @@ impl Page for DetailPage {
         } else if let Some(ref error) = self.error {
             format!("Error: {}", error)
         } else if let Some(ref data) = self.market_data {
-
             format!(
                 "{}\n\nMarket Data\n\nDescription: {}\nActive: {}\nLiquidity: {}\nVolume: {}\n24hr|1wk|1mo|1yr vol : {}|{}|{}|{}\nBid/Ask: {}/{}\n\n\n{}",
-                    self.content,
-                    data.description,
-                    data.active,
-                    data.liquidity,
-                    data.volume,
-                    data.volume24hr.unwrap_or(0.0),
-                    data.volume1wk.unwrap_or(0.0),
-                    data.volume1mo.unwrap_or(0.0),
-                    data.volume1yr.unwrap_or(0.0),
-                    data.best_ask,
-                    data.best_bid,
-                    self.buy_resp
+                self.content,
+                data.description,
+                data.active,
+                data.liquidity,
+                data.volume,
+                data.volume24hr.unwrap_or(0.0),
+                data.volume1wk.unwrap_or(0.0),
+                data.volume1mo.unwrap_or(0.0),
+                data.volume1yr.unwrap_or(0.0),
+                data.best_ask,
+                data.best_bid,
+                self.buy_resp
             )
         } else {
             format!("{}\n\nSlug: {}", self.content, self.id)
@@ -172,6 +238,8 @@ impl Page for DetailPage {
             Span::raw(" Go Back  "),
             Span::styled("↑/↓", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
             Span::raw(" Scroll  "),
+            Span::styled("y/n", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)),
+            Span::raw(" Buy Yes/No  "),
             Span::styled("q", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
             Span::raw(" Quit"),
             Span::styled(status, Style::default().fg(Color::DarkGray)),
@@ -185,25 +253,71 @@ impl Page for DetailPage {
             Paragraph::new(help_text).block(help_block),
             chunks[2],
         );
-    }
 
-    fn handle_input(&mut self, key: KeyEvent, _state: &SharedState) -> PageAction {
-        match key.code {
-            KeyCode::Char('q') => PageAction::Quit,
-            KeyCode::Esc | KeyCode::Backspace => PageAction::GoBack,
-            KeyCode::Up => {
-                self.scroll_offset = self.scroll_offset.saturating_sub(1);
-                PageAction::None
-            }
-            KeyCode::Down => {
-                self.scroll_offset = self.scroll_offset.saturating_add(1);
-                PageAction::None
-            }
-            KeyCode::Char('y') => {self.buy_yes = true;PageAction::None}
-            KeyCode::Char('n') => {self.buy_no = true;PageAction::None}
-            _ => PageAction::None,
+        if self.input_mode != InputMode::Normal {
+            self.render_input_popup(frame, area);
         }
     }
 
-
+    fn handle_input(&mut self, key: KeyEvent, _state: &SharedState) -> PageAction {
+        if self.input_mode != InputMode::Normal {
+            match key.code {
+                KeyCode::Esc => {
+                    self.input_mode = InputMode::Normal;
+                    self.input_buffer.clear();
+                    PageAction::None
+                }
+                KeyCode::Enter => {
+                    if !self.input_buffer.is_empty() {
+                        if self.input_buffer.parse::<f64>().is_ok() {
+                            match self.input_mode.clone() {
+                                InputMode::BuyYes => self.buy_yes = true,
+                                InputMode::BuyNo => self.buy_no = true,
+                                _ => {}
+                            }
+                        } else {
+                            self.input_buffer.clear();
+                        }
+                    }
+                    self.input_mode = InputMode::Normal;
+                    PageAction::None
+                }
+                KeyCode::Backspace => {
+                    self.input_buffer.pop();
+                    PageAction::None
+                }
+                KeyCode::Char(c) => {
+                    if c.is_ascii_digit() || (c == '.' && !self.input_buffer.contains('.')) {
+                        self.input_buffer.push(c);
+                    }
+                    PageAction::None
+                }
+                _ => PageAction::None,
+            }
+        } else {
+            match key.code {
+                KeyCode::Char('q') => PageAction::Quit,
+                KeyCode::Esc | KeyCode::Backspace => PageAction::GoBack,
+                KeyCode::Up => {
+                    self.scroll_offset = self.scroll_offset.saturating_sub(1);
+                    PageAction::None
+                }
+                KeyCode::Down => {
+                    self.scroll_offset = self.scroll_offset.saturating_add(1);
+                    PageAction::None
+                }
+                KeyCode::Char('y') => {
+                    self.input_mode = InputMode::BuyYes;
+                    self.input_buffer.clear();
+                    PageAction::None
+                }
+                KeyCode::Char('n') => {
+                    self.input_mode = InputMode::BuyNo;
+                    self.input_buffer.clear();
+                    PageAction::None
+                }
+                _ => PageAction::None,
+            }
+        }
+    }
 }

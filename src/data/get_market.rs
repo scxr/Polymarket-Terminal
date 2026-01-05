@@ -21,7 +21,6 @@ pub async fn get_market_from_slug(market_slug: &str) -> Result<MarketSpecificDet
 
 
 
-    // Now try to parse
     let data: MarketSpecificDetails = serde_json::from_str(&body)
         .map_err(|e| {
             eprintln!("JSON parse error: {}", e);

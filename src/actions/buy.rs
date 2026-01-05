@@ -20,7 +20,7 @@ fn parse_string_list(s: &str) -> Vec<String> {
         .collect()
 }
 
-pub async fn buy_yes(private_key: &str, clob_ids: String, option: &str) -> Result<PostOrderResponse> {
+pub async fn buy_yes(private_key: &str, clob_ids: String, option: &str, amount: String) -> Result<PostOrderResponse> {
     let clob_ids_parsed = parse_string_list(&clob_ids);
 
 
@@ -44,7 +44,7 @@ pub async fn buy_yes(private_key: &str, clob_ids: String, option: &str) -> Resul
         .authenticate()
         .await?;
 
-    let amount_dec = Decimal::from_str("1.0")?;
+    let amount_dec = Decimal::from_str(&amount)?;
 
     let market_order = client
         .market_order()
